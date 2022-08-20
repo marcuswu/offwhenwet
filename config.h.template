@@ -1,4 +1,5 @@
-
+// Comment to disable wifi & Adafruit IO
+#define ENABLE_IOT
 // The soil sensor i2c address
 #define SOIL_SENSOR 0x36
 // The sensor threshold considered to be wet

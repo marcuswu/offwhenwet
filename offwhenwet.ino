@@ -48,6 +48,7 @@ void setup() {
     pixels.begin();
     pixels.setBrightness(20);
 
+#if defined(ENABLE_IOT)
     Serial.print("Connecting to Adafruit IO");
     io.connect();
 
@@ -57,6 +58,7 @@ void setup() {
 
     Serial.println();
     Serial.println(io.statusText());
+#endif
 }
 
 void loop() {
@@ -107,6 +109,7 @@ void loop() {
 
 
 void sendMessage() {
+#if defined(ENABLE_IOT)
   unsigned long now = millis();
   // millis() resets every 50 days, so account for that
   if (lastMessage > now) {
@@ -141,4 +144,5 @@ void sendMessage() {
     nextSend->save(currentPowerState);
     nextSend = moistureFeed;
   }
+#endif
 }
