@@ -22,7 +22,7 @@ bool prevPowerState = true;
 
 void setup() {
     Serial.begin(115200);
-    while (! Serial);
+    while (! Serial && millis() < 5000);
 
     Serial.println("offwhenwet starting up");
 
