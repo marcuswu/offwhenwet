@@ -8,17 +8,11 @@ Adafruit_seesaw ss;
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
 
 AdafruitIO_Feed *powerFeed = io.feed("power");
-AdafruitIO_Feed *moistureFeed = io.feed("moisture");
-AdafruitIO_Feed *tempFeed = io.feed("temp");
 
-AdafruitIO_Feed *nextSend = NULL;
 bool currentPowerState = true;
-float currentTemp = 0;
 uint16_t currentTouch = 0;
 unsigned long lastMessage = 0;
 unsigned long powerOnAt = 0;
-
-bool prevPowerState = true;
 
 void setup() {
     Serial.begin(115200);
@@ -64,10 +58,9 @@ void setup() {
 void loop() {
     io.run();
 
-    currentTemp = ss.getTemp();
     currentTouch = ss.touchRead(0);
 
-    Serial.print("temp: "); Serial.print(currentTemp); Serial.print(" moisture: "); Serial.println(currentTouch);
+    Serial.print(" moisture: "); Serial.println(currentTouch);
 
     if (currentTouch > WET) {
         // Set LED red
@@ -76,13 +69,9 @@ void loop() {
         // Toggle power off
         digitalWrite(POWER_PIN, LOW);
         currentPowerState = false;
-        if (prevPowerState != currentPowerState || nextSend == powerFeed) {
-          prevPowerState = currentPowerState;
-          nextSend = powerFeed;
-        }
-        delay(200);
 
         sendMessage();
+        delay(200);
         return;
     }
 
@@ -94,17 +83,14 @@ void loop() {
     }
 
     if (currentPowerState == false && powerOnAt < millis()) {
-    // Toggle power on
+      // Toggle power on
       digitalWrite(POWER_PIN, HIGH);
       currentPowerState = true;
-      if (prevPowerState != currentPowerState || nextSend == powerFeed) {
-        prevPowerState = currentPowerState;
-        nextSend = powerFeed;
-      }
+      powerOnAt = 0;
     }
-    delay(200);
 
     sendMessage();
+    delay(200);
 }
 
 
@@ -125,24 +111,6 @@ void sendMessage() {
   // Alternate between updating moisture & temperature until there's a power change
   lastMessage = now;
   Serial.print("Sending update at "); Serial.print(now); Serial.println(" millis");
-  if (nextSend == NULL) {
-    nextSend = tempFeed;
-  }
-
-  if (nextSend == tempFeed) {
-    nextSend->save(currentTemp);
-    nextSend = moistureFeed;
-  }
-
-  if (nextSend == moistureFeed) {
-    nextSend->save(currentTouch);
-    nextSend = tempFeed;
-  }
-
-  // Update the power feed change & go back to updating moisture & temperature
-  if (nextSend == powerFeed) {
-    nextSend->save(currentPowerState);
-    nextSend = moistureFeed;
-  }
+  powerFeed->save(currentPowerState);
 #endif
 }
