@@ -41,14 +41,20 @@ void setup() {
 
     pixels.begin();
     pixels.setBrightness(20);
+    pixels.fill(0xFFFF00);
+    pixels.show();
 
 #if defined(ENABLE_IOT)
     Serial.print("Connecting to Adafruit IO");
     io.connect();
 
-    while (io.status() < AIO_CONNECTED) {
+    // Wait up to 1 minute for connection to Adafruit
+    while (io.status() < AIO_CONNECTED && millis() < 60000) {
       Serial.print(".");
     }
+    // Set LED green
+    pixels.fill(0x00FF00);
+    pixels.show();
 
     Serial.println();
     Serial.println(io.statusText());
@@ -56,7 +62,11 @@ void setup() {
 }
 
 void loop() {
-    io.run();
+#if defined(ENABLE_IOT)
+    if (io.status() == AIO_CONNECTED || io.status() == AIO_CONNECTED_INSECURE) {
+      io.run();
+    }
+#endif
 
     currentTouch = ss.touchRead(0);
 
@@ -75,9 +85,6 @@ void loop() {
         return;
     }
 
-    // Set LED green
-    pixels.fill(0x00FF00);
-    pixels.show();
     if (currentPowerState == false && powerOnAt == 0) {
       powerOnAt = millis() + POWER_ON_DELAY;
     }
@@ -87,6 +94,10 @@ void loop() {
       digitalWrite(POWER_PIN, HIGH);
       currentPowerState = true;
       powerOnAt = 0;
+      
+      // Set LED green
+      pixels.fill(0x00FF00);
+      pixels.show();
     }
 
     sendMessage();
@@ -97,6 +108,11 @@ void loop() {
 void sendMessage() {
 #if defined(ENABLE_IOT)
   unsigned long now = millis();
+
+  if (io.status() != AIO_CONNECTED && io.status() != AIO_CONNECTED_INSECURE) {
+    return;
+  }
+
   // millis() resets every 50 days, so account for that
   if (lastMessage > now) {
     lastMessage = now;
